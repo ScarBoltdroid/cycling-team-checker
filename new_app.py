@@ -9,13 +9,13 @@ sys.stdout.reconfigure(encoding='utf-8')
 # --- Load Teams ---
 def load_teams():
     try:
-        with open("/mount/data/teams.json", "r") as file:
+        with open("teams.json", "r") as file:
             return json.load(file)
     except FileNotFoundError:
         return {}
 
 def save_teams(teams):
-    with open("/mount/data/teams.json", "w") as file:
+    with open("teams.json", "w") as file:
         json.dump(teams, file, indent=4)
 
 def hash_password(password):
