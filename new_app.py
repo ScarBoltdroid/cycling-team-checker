@@ -38,7 +38,7 @@ def load_all_riders():
 all_riders_dict = load_all_riders()
 all_riders_names = list(all_riders_dict.keys())
 
-apps = ['Choose option', 'Do my cyclists ride?', 'Create a team', 'Update a team']
+apps = ['Choose option', 'Do my cyclists ride?', 'Create a team', 'Update a team', 'Races to riders[experimental]']
 
 st.title('Cycling Apps')
 chosenApp = st.selectbox('Select option', apps)
@@ -104,3 +104,31 @@ match chosenApp:
                 teams[team]['riders'] = selected_riders_urls
                 save_teams(teams)
                 st.success("Team updated successfully!")
+    case 'Races to riders[experimental]':
+        st.write('This feature is not yet optimized and might take a long time to load.\nProceed with caution!')
+        selection = st.pills('Select races:', list(races.keys()), selection_mode='multi')
+        if st.button('Go!'):
+            race_startlists = {}  # Store pre-processed startlists
+            for race in selection:
+                url = races[race]
+                startlist = RaceStartlist(url).startlist()  # Fetch and parse once
+                race_startlists[race] = {rider['rider_url'] for rider in startlist} #create a set of rider_urls
+
+            does_all = list(all_riders_dict.keys())  # Start with all riders
+
+            for race in selection:
+                rider_urls_in_race = race_startlists[race]
+                riders_to_remove = []
+                for rider in does_all:
+                    if all_riders_dict[rider] not in rider_urls_in_race:
+                        riders_to_remove.append(rider)
+                for rider in riders_to_remove:
+                    does_all.remove(rider)
+
+                if not does_all: #if no riders remain, break
+                    break
+
+            if len(does_all) > 0:
+                st.success(f'These riders do all races\n{does_all}')
+            else:
+                st.error('No rider does all races')
