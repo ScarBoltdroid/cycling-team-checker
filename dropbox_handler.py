@@ -1,11 +1,32 @@
 import streamlit as st
 import dropbox
 import json
+import requests
 
-# Authenticate with Dropbox
+def refresh_access_token():
+    """Requests a new access token using the refresh token."""
+    url = "https://api.dropbox.com/oauth2/token"
+    data = {
+        "grant_type": "refresh_token",
+        "refresh_token": st.secrets["dropbox"]["refresh_token"],
+        "client_id": st.secrets["dropbox"]["app_key"],
+        "client_secret": st.secrets["dropbox"]["app_secret"]
+    }
+    
+    response = requests.post(url, data=data)
+    
+    if response.status_code == 200:
+        return response.json()["access_token"]
+    else:
+        st.error("Failed to refresh Dropbox access token.")
+        return None
+
 def authenticate_dropbox():
-    access_token = st.secrets["dropbox"]["access_token"]
-    return dropbox.Dropbox(access_token)
+    """Authenticate Dropbox with a refreshed access token."""
+    access_token = refresh_access_token()
+    if access_token:
+        return dropbox.Dropbox(access_token)
+    return None
 
 dbx = authenticate_dropbox()
 
