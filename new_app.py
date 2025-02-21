@@ -3,20 +3,15 @@ import json
 import hashlib
 import pandas as pd
 from procyclingstats import RaceStartlist
+from dropbox_handler import load_teams, upload_teams
 import sys
 sys.stdout.reconfigure(encoding='utf-8')
 
 # --- Load Teams ---
-def load_teams():
-    try:
-        with open("teams.json", "r") as file:
-            return json.load(file)
-    except FileNotFoundError:
-        return {}
+def save_teams(updated_teams):
+    upload_teams(updated_teams)
 
-def save_teams(teams):
-    with open("teams.json", "w") as file:
-        json.dump(teams, file, indent=4)
+teams = load_teams()
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
