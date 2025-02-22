@@ -41,7 +41,7 @@ all_riders_dict = load_all_riders()
 all_riders_names = list(all_riders_dict.keys())
 
 apps = ['Choose option', 'Do my cyclists ride?', 'Create a team', 'Update a team', 'Hidden']
-hidden_apps = ['Choose option','Races to Riders','TeamTactics']
+hidden_apps = ['Choose option','Races to Riders','TeamTactics', 'Complete check']
 
 st.title('Cycling Apps')
 chosenApp = st.selectbox('Select option', apps)
@@ -192,7 +192,37 @@ match chosenApp:
                         else:
                             st.error(f"No team found for {selected_rider} in 2025.")
 
+                case 'Complete check':
+                    team = st.text_input("Enter your team name:")
+                    password = st.text_input("Enter team password:", type="password")
+                    
+                    if st.button("Go!"):
+                        if team in teams and teams[team]['password'] == hash_password(password):
+                            ploeg = teams[team]['riders']
+                            active = {}
+                            for race in races:
+                                url = races[race]
+                                startlist = RaceStartlist(url)
+                                sl = startlist.startlist()
+                                active[race] = [start['rider_name'] for start in sl if start['rider_url'] in ploeg]
+                            
+                            race_data = []
 
+                            for race, riders in active.items():
+                                race_data.append({
+                                    "Race": race,
+                                    "Number of Riders": len(riders),
+                                    "Riders": ", ".join(riders)  # Join list into a single string for readability
+                                })
+
+                            # Create DataFrame
+                            df_active = pd.DataFrame(race_data)
+
+
+                            st.table(df_active)
+                            
+                        else:
+                            st.error("Incorrect password or team not found.")   
                           
 
 
