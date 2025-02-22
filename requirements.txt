@@ -2,4 +2,3 @@ streamlit
 requests
 procyclingstats
 dropbox
-collections
