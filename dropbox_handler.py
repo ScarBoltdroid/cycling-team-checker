@@ -1,7 +1,12 @@
 import streamlit as st
 import dropbox
-import json
 import requests
+import json
+import time
+
+# Store token expiration time in session state
+if "dropbox_token_expiry" not in st.session_state:
+    st.session_state["dropbox_token_expiry"] = 0
 
 def refresh_access_token():
     """Requests a new access token using the refresh token."""
@@ -12,35 +17,55 @@ def refresh_access_token():
         "client_id": st.secrets["dropbox"]["app_key"],
         "client_secret": st.secrets["dropbox"]["app_secret"]
     }
-    
+
     response = requests.post(url, data=data)
     
     if response.status_code == 200:
-        return response.json()["access_token"]
+        new_token = response.json()["access_token"]
+        
+        # Update the session state with the new token and expiration time
+        st.session_state["dropbox_access_token"] = new_token
+        st.session_state["dropbox_token_expiry"] = time.time() + 14400  # Token lasts 4 hours
+        
+        return new_token
     else:
-        st.error("Failed to refresh Dropbox access token.")
+        st.error("Failed to refresh Dropbox access token. Please check your credentials.")
         return None
 
+def get_access_token():
+    """Ensures that the access token is valid before returning it."""
+    if (
+        "dropbox_access_token" not in st.session_state or 
+        time.time() >= st.session_state["dropbox_token_expiry"]
+    ):
+        return refresh_access_token()
+    
+    return st.session_state["dropbox_access_token"]
+
 def authenticate_dropbox():
-    """Authenticate Dropbox with a refreshed access token."""
-    access_token = refresh_access_token()
+    """Authenticate Dropbox with an up-to-date access token."""
+    access_token = get_access_token()
     if access_token:
         return dropbox.Dropbox(access_token)
     return None
 
 dbx = authenticate_dropbox()
 
-# Upload teams.json to Dropbox
 def upload_teams(teams):
     """Uploads teams.json to Dropbox."""
+    if dbx is None:
+        return  # Prevent upload if authentication failed
+
     file_path = "/teams.json"
     json_data = json.dumps(teams, indent=4)
 
     dbx.files_upload(json_data.encode(), file_path, mode=dropbox.files.WriteMode("overwrite"))
 
-# Load teams.json from Dropbox
 def load_teams():
     """Retrieves teams.json from Dropbox."""
+    if dbx is None:
+        return {}  # Prevent crash if authentication failed
+
     file_path = "/teams.json"
 
     try:
